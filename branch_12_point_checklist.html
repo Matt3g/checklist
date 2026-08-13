@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Branch 12 Point Checklist</title>
+<style>
+:root{--bg:#f4f6f8;--card:#fff;--ink:#17202a;--muted:#64748b;--line:#d7dde5;--accent:#14532d;--pass:#166534;--fail:#b91c1c}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);font-family:Arial,Helvetica,sans-serif;color:var(--ink)}
+.container{max-width:1050px;margin:auto;padding:18px}
+header{background:var(--card);border-radius:14px;padding:20px;margin-bottom:16px;border:1px solid var(--line);box-shadow:0 2px 8px #0000000b}
+h1{margin:0 0 6px;font-size:clamp(22px,4vw,32px)}
+.subtitle{color:var(--muted);margin:0}
+.form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:18px}
+label{font-weight:700;font-size:14px}
+input,textarea{width:100%;margin-top:6px;border:1px solid var(--line);border-radius:9px;padding:11px;font:inherit;background:white}
+textarea{min-height:90px;resize:vertical}
+.check-card{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:12px;padding:16px}
+.item-top{display:flex;gap:12px}
+.num{min-width:36px;height:36px;border-radius:50%;background:#e8f0eb;color:var(--accent);display:grid;place-items:center;font-weight:800}
+.question{font-weight:700;line-height:1.4;padding-top:7px}
+.choice{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:15px 0}
+.choice label{display:block;cursor:pointer}
+.choice input{position:absolute;opacity:0;pointer-events:none}
+.choice span{display:block;text-align:center;border:2px solid var(--line);border-radius:10px;padding:12px;font-weight:800}
+.choice input:checked + .pass{border-color:var(--pass);background:#ecfdf5;color:var(--pass)}
+.choice input:checked + .fail{border-color:var(--fail);background:#fef2f2;color:var(--fail)}
+.meta{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.meta input{margin-top:4px}
+.signature-wrap{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-top:16px}
+.signature-pad{width:100%;height:180px;border:2px dashed #b9c2cc;border-radius:10px;background:#fff;touch-action:none;display:block}
+.sig-actions{display:flex;gap:8px;margin-top:8px}
+button{border:0;border-radius:9px;padding:11px 16px;font-weight:700;cursor:pointer}
+.clear{background:#e5e7eb;color:#111827}
+.submit{background:var(--accent);color:white}
+.actions{display:flex;gap:10px;justify-content:flex-end;margin:16px 0}
+.status{margin-top:10px;font-weight:700}
+footer{color:var(--muted);font-size:13px;text-align:center;padding:18px}
+@media(max-width:700px){
+ .container{padding:10px}.form-grid,.meta{grid-template-columns:1fr}
+ .check-card{padding:13px}.choice{gap:7px}
+ .actions{position:sticky;bottom:8px;background:#ffffffed;padding:8px;border-radius:12px;z-index:5}
+}
+@media print{
+ body{background:#fff}.container{max-width:none;padding:0} header,.check-card,.signature-wrap{box-shadow:none}
+ .actions,.sig-actions{display:none}.check-card{break-inside:avoid}
+}
+</style>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+
+<body>
+<div class="container">
+<header>
+<h1>Branch 12 Point Checklist</h1>
+<p class="subtitle">Complete each item, record the reason for any failure, and sign the inspection.</p>
+<div class="form-grid">
+<div><label>Branch<input id="branch" type="text" placeholder="Branch name"></label></div>
+<div><label>Date of Inspection<input id="date" type="date"></label></div>
+</div>
+</header>
+
+<main id="checklist"></main>
+
+<section class="check-card">
+<div class="item-top"><div class="num">!</div><div class="question">Additional Comments / Corrective Actions</div></div>
+<textarea id="comments" placeholder="Enter additional comments or corrective actions..."></textarea>
+</section>
+
+<section class="signature-wrap">
+<h2>Inspector</h2>
+<div class="form-grid">
+<div><label>Inspector Name<input id="inspector" type="text"></label></div>
+<div><label>Branch Manager Name<input id="manager" type="text"></label></div>
+</div>
+<h3>Inspector Signature</h3>
+<canvas id="signature" class="signature-pad"></canvas>
+<div class="sig-actions">
+<button class="clear" type="button" onclick="clearSignature()">Clear Signature</button>
+</div>
+</section>
+
+<div class="actions">
+<button class="clear" type="button" onclick="resetForm()">Reset</button>
+<button class="submit" type="button" onclick="submitChecklist()">Submit Checklist</button>
+</div>
+<div id="status" class="status"></div>
+
+<footer>Manager: Post on HSE Board and review at the next toolbox. Return completed checklist to Safety.</footer>
+</div>
+
+<script>
+const items = [
+["Wheel Chocks Being Used at Docks - ALL TIMES","Door, Unit#:"],
+["PPE - Safety Vests, Footwear (traction aids in Winter), Eyewear, Face Masks/Shields available for certain chemical spills, spill kits with pads/gloves","Name:"],
+["Yards Maintained - Snow and Ice, Garbage, Weeds, Dunnage, Butts not thrown on ground, Pallets stored 50 ft from bldg. (fire code)","Area:"],
+["Seat Belts being worn on forklifts, skid steer, loader at all times","Name:"],
+["Pre-Op inspections completed on forklift, electric power jacks, skid steer, loader prior to use and any defects recorded on the daily inspection report","Unit#:"],
+["Truck Authority Binders - random check of one unit, all current documents required and 15 blank logs in the truck","Truck#:"],
+["Cabs of all vehicles free from garbage, debris and beverage containers on floor","Truck#:"],
+["Housekeeping - slip/trip/fall hazards. Emergency exits free of clutter & fire extinguishers and electrical panels not blocked. Overall cleanliness of warehouse","Door:"],
+["Nose Dive Legs - Used at all times when parked at docks","Door, Unit#:"],
+["Pedestrians are maintaining safe distance from vehicular equipment",""],
+["TDG Card and Forklift card can be produced by Driver or Dock Worker or by Manager onsite (including Supervisors on dock)","Name:"],
+["Dock doors closed and pylon on dock plate when trailer or truck is done being loaded","Door:"]
+];
+
+const checklist = document.getElementById("checklist");
+items.forEach((item,i)=>{
+  const n=i+1;
+  const card=document.createElement("section");
+  card.className="check-card";
+  card.innerHTML=`
+    <div class="item-top">
+      <div class="num">${n}</div>
+      <div class="question">${item[0]}</div>
+    </div>
+    <div class="choice">
+      <label><input type="radio" name="result${n}" value="Pass"><span class="pass">✓ PASS</span></label>
+      <label><input type="radio" name="result${n}" value="Fail"><span class="fail">✕ FAIL</span></label>
+    </div>
+    <div class="meta">
+      ${item[1] ? `<label>${item[1]}<input type="text" name="detail${n}" placeholder="${item[1].replace(':','')}"></label>` : `<div></div>`}
+      <label>Reason / Notes<input type="text" name="reason${n}" placeholder="Required if Fail"></label>
+    </div>`;
+  checklist.appendChild(card);
+});
+
+document.getElementById("date").valueAsDate=new Date();
+
+const canvas=document.getElementById("signature");
+const ctx=canvas.getContext("2d");
+let drawing=false, hasSignature=false;
+
+function resizeCanvas(){
+  const ratio=Math.max(window.devicePixelRatio||1,1);
+  const rect=canvas.getBoundingClientRect();
+  const old=canvas.toDataURL();
+  canvas.width=rect.width*ratio; canvas.height=rect.height*ratio;
+  ctx.setTransform(ratio,0,0,ratio,0,0);
+  if(hasSignature){const img=new Image();img.onload=()=>ctx.drawImage(img,0,0,rect.width,rect.height);img.src=old;}
+  ctx.lineWidth=2;ctx.lineCap="round";ctx.lineJoin="round";
+}
+window.addEventListener("resize",resizeCanvas); resizeCanvas();
+
+function pos(e){
+ const r=canvas.getBoundingClientRect();
+ const p=e.touches?e.touches[0]:e;
+ return {x:p.clientX-r.left,y:p.clientY-r.top};
+}
+function start(e){e.preventDefault();drawing=true;const p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y)}
+function move(e){if(!drawing)return;e.preventDefault();const p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke();hasSignature=true}
+function end(){drawing=false}
+canvas.addEventListener("pointerdown",start);canvas.addEventListener("pointermove",move);canvas.addEventListener("pointerup",end);canvas.addEventListener("pointerleave",end);
+
+function clearSignature(){ctx.clearRect(0,0,canvas.width,canvas.height);hasSignature=false}
+
+async function submitChecklist() {
+
+    let valid = true;
+    let results = [];
+
+    items.forEach((item, i) => {
+        const n = i + 1;
+
+        const selected =
+            document.querySelector(`input[name="result${n}"]:checked`);
+
+        const reason =
+            document.querySelector(`[name="reason${n}"]`).value.trim();
+
+        if (!selected) valid = false;
+
+        if (selected && selected.value === "Fail" && !reason)
+            valid = false;
+
+        results.push({
+            item: n,
+            result: selected?.value || "",
+            reason
+        });
+    });
+
+    if (
+        !document.getElementById("branch").value.trim() ||
+        !document.getElementById("inspector").value.trim() ||
+        !hasSignature
+    ) {
+        valid = false;
+    }
+
+    const status = document.getElementById("status");
+
+    if (!valid) {
+        status.textContent =
+            "Please complete all Pass/Fail selections, enter reasons for any Fail, and provide the branch, inspector name, and signature.";
+        status.style.color = "#b91c1c";
+        return;
+    }
+
+    const record = {
+        branch: document.getElementById("branch").value,
+        date: document.getElementById("date").value,
+        inspector: document.getElementById("inspector").value,
+        manager: document.getElementById("manager").value,
+        comments: document.getElementById("comments").value,
+        results,
+        signature: canvas.toDataURL("image/png")
+    };
+
+    localStorage.setItem(
+        "branchChecklistLast",
+        JSON.stringify(record)
+    );
+
+    status.textContent = "Generating PDF...";
+    status.style.color = "#166534";
+
+    const { jsPDF } = window.jspdf;
+
+
+const pdf = new jsPDF("p", "mm", "letter");
+
+let y = 10;
+
+pdf.setFontSize(14);
+pdf.setFont(undefined, "bold");
+pdf.text("BRANCH 12 POINT CHECKLIST", 105, y, { align: "center" });
+
+y += 10;
+
+pdf.setFontSize(10);
+pdf.setFont(undefined, "normal");
+
+pdf.text(`Branch: ${record.branch}`, 10, y);
+pdf.text("Pass/Fail", 180, y);
+
+y += 6;
+
+record.results.forEach((r, i) => {
+
+    const detail =
+        document.querySelector(`[name="detail${i+1}"]`)?.value || "";
+
+    const question = items[i][0];
+
+    pdf.rect(5, y-4, 8, 10);
+    pdf.text(String(i+1), 7, y+2);
+
+    pdf.rect(13, y-4, 135, 10);
+    pdf.text(
+        pdf.splitTextToSize(question, 130),
+        15,
+        y+2
+    );
+
+    pdf.rect(148, y-4, 32, 10);
+    pdf.text(detail, 150, y+2);
+
+    pdf.rect(180, y-4, 25, 10);
+    pdf.text(r.result, 185, y+2);
+
+    y += 10;
+});
+
+y += 5;
+
+pdf.setFont(undefined, "bold");
+pdf.text(
+    "ADDITIONAL COMMENTS FROM PASS/FAIL:",
+    10,
+    y
+);
+
+y += 5;
+
+pdf.setFont(undefined, "normal");
+
+const commentsLines =
+    pdf.splitTextToSize(record.comments || "", 190);
+
+pdf.text(commentsLines, 10, y);
+
+y += 30;
+
+pdf.text(
+    `Date of Inspection: ${record.date}`,
+    10,
+    y
+);
+
+y += 15;
+
+pdf.text(
+    `Inspector Name: ${record.inspector}`,
+    10,
+    y
+);
+
+if(record.signature){
+    pdf.addImage(
+        record.signature,
+        "PNG",
+        120,
+        y - 8,
+        40,
+        15
+    );
+}
+
+y += 20;
+
+pdf.text(
+    `Branch Mgr Name: ${record.manager}`,
+    10,
+    y
+);
+
+pdf.save(
+    `Checklist_${record.branch}_${record.date}.pdf`
+);
+
+
+    const pageWidth = 215.9;
+    const pageHeight = 279.4;
+
+    const imgWidth = pageWidth;
+    const imgHeight =
+        (canvasImage.height * imgWidth) /
+        canvasImage.width;
+
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    pdf.addImage(
+        imgData,
+        "PNG",
+        0,
+        position,
+        imgWidth,
+        imgHeight
+    );
+
+    heightLeft -= pageHeight;
+
+    while (heightLeft > 0) {
+
+        position = heightLeft - imgHeight;
+
+        pdf.addPage();
+
+        pdf.addImage(
+            imgData,
+            "PNG",
+            0,
+            position,
+            imgWidth,
+            imgHeight
+        );
+
+        heightLeft -= pageHeight;
+    }
+
+    pdf.save(
+        `Checklist_${record.branch}_${record.date}.pdf`
+    );
+
+    status.textContent =
+        "Checklist submitted and PDF downloaded successfully.";
+}
+
+function resetForm(){
+ if(!confirm("Reset this checklist? All entered information will be cleared."))return;
+ document.querySelectorAll("input[type=text], textarea").forEach(e=>e.value="");
+ document.querySelectorAll("input[type=radio]").forEach(e=>e.checked=false);
+ document.getElementById("date").valueAsDate=new Date();
+ clearSignature();
+ document.getElementById("status").textContent="";
+}
+</script>
+</body>
+</html>

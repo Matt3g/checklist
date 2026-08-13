@@ -251,10 +251,15 @@ record.results.forEach((r, i) => {
     pdf.text(String(i+1), 7, y+2);
 
     pdf.rect(13, y-4, 135, 10);
-    pdf.text(
+    /*pdf.text(
         pdf.splitTextToSize(question, 130),
         15,
         y+2
+    );*/
+ 
+    const rowHeight = Math.max(
+      12, 
+      (questionLines.length * 5) + 8
     );
 
     pdf.rect(148, y-4, 32, 10);

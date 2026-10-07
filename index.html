@@ -12,6 +12,7 @@ body{margin:0;background:var(--bg);font-family:Arial,Helvetica,sans-serif;color:
 html,
 body{
  width:100%;
+ overflow-x: hidden;
  margin:0;
  }
  
@@ -22,7 +23,11 @@ body{
 header{background:var(--card);border-radius:14px;padding:20px;margin-bottom:16px;border:1px solid var(--line);box-shadow:0 2px 8px #0000000b}
 h1{margin:0 0 6px;font-size:clamp(22px,4vw,32px)}
 .subtitle{color:var(--muted);margin:0}
-.form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:18px}
+
+.form-grid {
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+}
 label{font-weight:700;font-size:14px}
 input,textarea{width:100%;margin-top:6px;border:1px solid var(--line);border-radius:9px;padding:11px;font:inherit;background:white}
 textarea{min-height:90px;resize:vertical}
@@ -147,7 +152,7 @@ footer{color:var(--muted);font-size:13px;text-align:center;padding:8px; margin:0
 
 <div class="actions">
 <button class="clear" type="button" onclick="resetForm()">Reset</button>
-<button class="submit" type="button" onclick="submitChecklist()">Submit Checklist</button>
+<button class="submit" type="button" onclick="submitChecklist()">Generate PDF</button>
 </div>
 <div id="status" class="status"></div>
 
@@ -308,8 +313,18 @@ record.results.forEach((r, i) => {
         document.querySelector(`[name="detail${i+1}"]`)?.value || "";
 
     const question = items[i][0];
+    const questionLines = pdf.splitTextToSize(
+         question,
+         130
+    );
+ 
+    pdf.text(
+        questionLines,
+        15,
+        y + 2
+    );
 
-    pdf.rect(5, y-4, 8, 10);
+    //pdf.rect(5, y-4, 8, 10);
     pdf.text(String(i+1), 7, y+2);
 
     pdf.rect(13, y-4, 135, 10);
@@ -317,17 +332,17 @@ record.results.forEach((r, i) => {
         pdf.splitTextToSize(question, 130),
         15,
         y+2
-    );*/
+    );
  
     const rowHeight = Math.max(
       12, 
       (questionLines.length * 5) + 8
-    );
+    );*/
 
-    pdf.rect(148, y-4, 32, 10);
+   // pdf.rect(148, y-4, 32, 10);
     pdf.text(detail, 150, y+2);
 
-    pdf.rect(180, y-4, 25, 10);
+    //pdf.rect(180, y-4, 25, 10);
     pdf.text(r.result, 185, y+2);
 
     y += 10;
@@ -390,7 +405,7 @@ pdf.save(
     `Checklist_${record.branch}_${record.date}.pdf`
 );
 
-
+/*
     const pageWidth = 215.9;
     const pageHeight = 279.4;
 
@@ -434,7 +449,7 @@ pdf.save(
     pdf.save(
         `Checklist_${record.branch}_${record.date}.pdf`
     );
-
+	*/
     status.textContent =
         "Checklist submitted and PDF downloaded successfully.";
 }
